@@ -34,6 +34,7 @@ hr{
 .title{
     text-align:center;
     margin-top:190px;
+    padding:20px;
 }
 
 .nav{
@@ -105,36 +106,37 @@ img{
 }
 
 .modal{
-    display: none;
-    position: fixed;
-    z-index:1;
     
-    max-width: 100%;
-    height: auto;
+    display: none;
+    max-width:100%;
+    height:auto;
+    justify-content:center;
+    align-items:center;
+    position: fixed;
+    right:0; 
+    left: 0;
+    top:0;
+    bottom:0;
     overflow: auto;
+    z-index:1;
     background-color:rgba(0, 0, 0, 0.603);
 
+
 }
 
-.modal-content{
-    display:grid;
-    grid-template-rows: 30px auto 30px;
-    grid-template-columns: 1fr 3fr 1fr;
-    background-color: #fefefe;
-    margin:auto;
-    width:80vw;
-    
-    border: 1px solid #888;
-    box-shadow: 2px 2px 10px;
-    align-items:center;
 
+.modal-img{
+    padding:10px;
+    max-width: 100%;
+    height: auto;
     
+  
 }
+
 .back-arrow, .forward-arrow{
     font-size: 42px;
 }
 .back-arrow{
-    grid-column:1;
     text-align:center;
 
 }
@@ -144,11 +146,6 @@ img{
 
 }
 
-.modal-img{
-    max-width: 100%;
-    height: auto;
-    grid-column: 2;
-}
 
 .close{
     font-size:28px;
