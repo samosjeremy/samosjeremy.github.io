@@ -124,30 +124,45 @@ img{
 
 }
 
-
 .modal-img{
-    padding:10px;
-    max-width: 100%;
-    height: auto;
     
-  
+    max-width: 90%;
+    height: auto;
+    max-height:90%;
+    z-index:1;
+}
+
+.ar{
+    position:relative;
+    top:35%;
 }
 
 .back-arrow, .forward-arrow{
+    position:fixed;
+    height:90%;
+    color:#daeaeb00;
     font-size: 42px;
-}
-.back-arrow{
+    z-index:2;
     text-align:center;
-
+    
+}
+.back-arrow{ /*rename these to something like back area instead of arrow */
+    width:30vw;
+    left:5%;
+    /*background-color:rgba(161, 92, 92, 0.603);*/
+    
 }
 .forward-arrow{
-    grid-column: 3;
-    text-align:center;
-
+    width:30vw;
+    right:5%;
+    /*background-color:rgba(161, 92, 92, 0.603);*/
 }
 
 
 .close{
+    position:fixed;
+    top:0;
+    left:1%;
     font-size:28px;
     font-weight:bold;
 }
@@ -156,7 +171,8 @@ img{
 .close:focus,
 .forward-arrow:hover,
 .back-arrow:hover {
-    color:black;
+    color:rgba(150, 144, 144, 0.842);;
     cursor: pointer;
+
 }
 
