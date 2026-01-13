@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Higher or Lower: High Score Edition</title>
+    <style>
+        :root {
+            --bg-color: #1a1a1a;
+            --panel-left: #2d3436;
+            --panel-right: #2d3436;
+            --text-color: #ffffff;
+            --accent-green: #00b894;
+            --accent-red: #d63031;
+            --accent-gold: #fdcb6e;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            height: 100vh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* VS Circle */
+        .vs-badge {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 60px;
+            height: 60px;
+            background: white;
+            color: black;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 1.2rem;
+            z-index: 10;
+            box-shadow: 0 0 20px rgba(0,0,0,0.5);
+        }
+
+        /* Loading Screen */
+        .loading-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: var(--bg-color);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 200;
+            flex-direction: column;
+        }
+        
+        .spinner {
+            width: 40px; height: 40px;
+            border: 4px solid #fff;
+            border-top: 4px solid var(--accent-green);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 20px;
+        }
+
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+
+        /* Main Game Layout */
+        .game-container {
+            display: flex;
+            width: 100%;
+            height: 100%;
+            opacity: 0;
+            transition: opacity 0.5s;
+        }
+
+        .game-container.loaded { opacity: 1; }
+
+        .panel {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 20px;
+            position: relative;
+            transition: background-color 0.3s;
+        }
+
+        .panel-left { background-color: var(--panel-left); }
+        .panel-right { background-color: var(--panel-right); }
+
+        .flag {
+            width: 150px;
+            height: auto;
+            border-radius: 8px;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.3);
+            margin-bottom: 20px;
+            object-fit: cover;
+        }
+
+        h1 { font-size: 2.5rem; margin-bottom: 10px; text-shadow: 0 2px 4px rgba(0,0,0,0.5); }
+        .population-display { font-size: 3rem; font-weight: bold; color: #ffeaa7; text-shadow: 0 2px 4px rgba(0,0,0,0.5); }
+        .label { font-size: 1.2rem; opacity: 0.8; margin-bottom: 5px; }
+
+        /* Buttons */
+        .btn-container {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .btn {
+            padding: 15px 40px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            border: 2px solid white;
+            border-radius: 50px;
+            cursor: pointer;
+            background: transparent;
+            color: white;
+            transition: all 0.2s;
+            text-transform: uppercase;
+        }
+
+        .btn:hover { background: white; color: black; transform: scale(1.05); }
+
+        /* SCORE BOARDS */
+        .score-board {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            font-size: 1.5rem;
+            z-index: 20;
+            background: rgba(0,0,0,0.5);
+            padding: 5px 15px;
+            border-radius: 20px;
+        }
+
+        .high-score-board {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            font-size: 1.2rem;
+            z-index: 20;
+            background: rgba(0,0,0,0.5);
+            padding: 5px 15px;
+            border-radius: 20px;
+            color: var(--accent-gold);
+            font-weight: bold;
+        }
+
+        /* Animations & Flashes */
+        @keyframes shake {
+            0% { transform: translateX(0); }
+            25% { transform: translateX(-10px); }
+            50% { transform: translateX(10px); }
+            75% { transform: translateX(-10px); }
+            100% { transform: translateX(0); }
+        }
+
+        .shake { animation: shake 0.4s ease-in-out; }
+        .correct-flash { background-color: var(--accent-green) !important; }
+        .wrong-flash { background-color: var(--accent-red) !important; }
+
+        /* Mobile */
+        @media (max-width: 768px) {
+            .game-container { flex-direction: column; }
+            .vs-badge { width: 50px; height: 50px; font-size: 1rem; }
+            h1 { font-size: 1.8rem; }
+            .population-display { font-size: 2rem; }
+            .flag { width: 100px; }
+            .high-score-board { font-size: 1rem; top: 10px; left: 10px; }
+            .score-board { bottom: 10px; right: 10px; }
+        }
+
+        /* Modal */
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.85);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s;
+        }
+        .modal-overlay.active { opacity: 1; pointer-events: all; }
+        
+        .modal-content {
+            background: #2d3436;
+            padding: 40px;
+            border-radius: 20px;
+            text-align: center;
+            border: 1px solid #555;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+        }
+        
+        .new-record-text {
+            color: var(--accent-gold);
+            font-weight: bold;
+            font-size: 1.2rem;
+            margin-top: 10px;
+            display: none;
+        }
+        .new-record-text.show { display: block; animation: shake 0.5s; }
+    </style>
+</head>
+<body>
+
+    <div class="loading-overlay" id="loading">
+        <div class="spinner"></div>
+        <p>Fetching Global Data...</p>
+    </div>
+
+    <div class="high-score-board">🏆 Best: <span id="best-score">0</span></div>
+    <div class="score-board">Score: <span id="current-score">0</span></div>
+    <div class="vs-badge">VS</div>
+
+    <div class="game-container" id="game-container">
+        <div class="panel panel-left" id="left-panel">
+            <img src="" alt="Flag" class="flag" id="left-flag">
+            <h1 id="left-name">Loading...</h1>
+            <p class="label">Population</p>
+            <div class="population-display" id="left-pop">0</div>
+        </div>
+
+        <div class="panel panel-right" id="right-panel">
+            <img src="" alt="Flag" class="flag" id="right-flag">
+            <h1 id="right-name">Loading...</h1>
+            <p class="label">Population</p>
+            <div class="population-display" id="right-pop">???</div>
+            
+            <div class="btn-container" id="controls">
+                <button class="btn" onclick="guess('higher')">Higher ▲</button>
+                <button class="btn" onclick="guess('lower')">Lower ▼</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="game-over-modal">
+        <div class="modal-content">
+            <h1 style="color: #d63031">Game Over!</h1>
+            <p style="font-size: 1.5rem; margin: 20px 0;">You scored: <span id="final-score" style="font-weight:bold; color:white">0</span></p>
+            <p class="new-record-text" id="new-record-msg">🌟 NEW HIGH SCORE! 🌟</p>
+            <button class="btn" onclick="initGame()">Play Again</button>
+        </div>
+    </div>
+
+    <script>
+        // GLOBAL VARIABLES
+        let countriesData = [];
+        let currentLeft;
+        let currentRight;
+        let score = 0;
+        let highScore = 0; // High Score Variable
+        let isAnimating = false;
+
+        // DOM ELEMENTS
+        const loadingOverlay = document.getElementById('loading');
+        const gameContainer = document.getElementById('game-container');
+        const leftFlag = document.getElementById('left-flag');
+        const leftName = document.getElementById('left-name');
+        const leftPop = document.getElementById('left-pop');
+        const leftPanel = document.getElementById('left-panel');
+        const rightFlag = document.getElementById('right-flag');
+        const rightName = document.getElementById('right-name');
+        const rightPop = document.getElementById('right-pop');
+        const rightPanel = document.getElementById('right-panel');
+        const controls = document.getElementById('controls');
+        
+        const scoreEl = document.getElementById('current-score');
+        const bestScoreEl = document.getElementById('best-score'); // New Element
+        
+        const modal = document.getElementById('game-over-modal');
+        const finalScoreEl = document.getElementById('final-score');
+        const newRecordMsg = document.getElementById('new-record-msg');
+
+        // --- 1. LOCAL STORAGE & DATA FETCHING ---
+        async function fetchCountries() {
+            // Load High Score from Local Storage on startup
+            highScore = parseInt(localStorage.getItem('popGameHighScore')) || 0;
+            bestScoreEl.innerText = highScore;
+
+            try {
+                const res = await fetch('https://restcountries.com/v3.1/all?fields=name,cca2,population,independent');
+                const data = await res.json();
+                countriesData = data.filter(c => c.independent && c.population > 0).map(c => ({
+                    name: c.name.common,
+                    code: c.cca2.toLowerCase(),
+                    pop: c.population
+                }));
+                
+                loadingOverlay.style.display = 'none';
+                gameContainer.classList.add('loaded');
+                initGame();
+
+            } catch (err) {
+                alert("Failed to load country data. Please refresh.");
+                console.error(err);
+            }
+        }
+
+        // --- 2. MATCHMAKING LOGIC ---
+        function getSmartOpponent(baseCountry) {
+            const minPop = baseCountry.pop * 0.5;
+            const maxPop = baseCountry.pop * 4.0;
+
+            let candidates = countriesData.filter(c => 
+                c.code !== baseCountry.code && 
+                c.pop > minPop && 
+                c.pop < maxPop
+            );
+
+            if (candidates.length === 0) {
+                candidates = countriesData.filter(c => c.code !== baseCountry.code);
+            }
+            return candidates[Math.floor(Math.random() * candidates.length)];
+        }
+
+        function formatNumber(num) {
+            return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+        }
+
+        function initGame() {
+            score = 0;
+            scoreEl.innerText = score;
+            modal.classList.remove('active');
+            newRecordMsg.classList.remove('show'); // Hide new record msg
+            
+            currentLeft = countriesData[Math.floor(Math.random() * countriesData.length)];
+            currentRight = getSmartOpponent(currentLeft);
+
+            render();
+        }
+
+        function render() {
+            leftFlag.src = `https://flagcdn.com/w320/${currentLeft.code}.png`;
+            leftName.innerText = currentLeft.name;
+            leftPop.innerText = formatNumber(currentLeft.pop);
+
+            rightFlag.src = `https://flagcdn.com/w320/${currentRight.code}.png`;
+            rightName.innerText = currentRight.name;
+            
+            rightPop.innerText = "???";
+            controls.style.display = 'flex';
+            
+            rightPanel.classList.remove('correct-flash', 'wrong-flash');
+            leftPanel.classList.remove('correct-flash', 'wrong-flash');
+        }
+
+        function guess(direction) {
+            if (isAnimating) return;
+            isAnimating = true;
+
+            const isHigher = currentRight.pop > currentLeft.pop;
+            const correct = (direction === 'higher' && isHigher) || (direction === 'lower' && !isHigher);
+
+            rightPop.innerText = formatNumber(currentRight.pop);
+            controls.style.display = 'none';
+
+            if (correct) {
+                handleCorrect();
+            } else {
+                handleWrong();
+            }
+        }
+
+        function handleCorrect() {
+            rightPanel.classList.add('correct-flash');
+            score++;
+            scoreEl.innerText = score;
+
+            setTimeout(() => {
+                currentLeft = currentRight;
+                currentRight = getSmartOpponent(currentLeft);
+                render();
+                isAnimating = false;
+            }, 1200);
+        }
+
+        function handleWrong() {
+            rightPanel.classList.add('wrong-flash');
+            rightPanel.classList.add('shake');
+            
+            // --- HIGH SCORE LOGIC ---
+            if (score > highScore) {
+                highScore = score;
+                localStorage.setItem('popGameHighScore', highScore); // Save to browser
+                bestScoreEl.innerText = highScore; // Update UI
+                newRecordMsg.classList.add('show'); // Show "New Record" text in modal
+            }
+
+            setTimeout(() => {
+                rightPanel.classList.remove('shake');
+                finalScoreEl.innerText = score;
+                modal.classList.add('active');
+                isAnimating = false;
+            }, 1500);
+        }
+
+        fetchCountries();
+
+    </script>
+</body>
+</html>
