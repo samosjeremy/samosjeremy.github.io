@@ -34,6 +34,30 @@
             flex-direction: column;
         }
 
+        /* --- HOME BUTTON --- */
+        .home-btn {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            z-index: 100;
+            text-decoration: none;
+            color: rgba(255, 255, 255, 0.7);
+            background: rgba(0, 0, 0, 0.4);
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.2s;
+            backdrop-filter: blur(5px);
+            font-weight: bold;
+        }
+
+            .home-btn:hover {
+                background: rgba(255, 255, 255, 0.1);
+                color: white;
+                transform: scale(1.05);
+            }
+
         /* --- LAYOUT STRUCTURE --- */
         .game-wrapper {
             flex: 1;
@@ -388,6 +412,14 @@
                 bottom: 10px;
                 right: 10px;
             }
+
+            /* Mobile adjustment for Home Button */
+            .home-btn {
+                top: 10px;
+                left: 10px;
+                padding: 6px 12px;
+                font-size: 0.8rem;
+            }
         }
     </style>
 </head>
@@ -397,6 +429,8 @@
         <div class="spinner"></div>
         <p>Fetching Global Data...</p>
     </div>
+
+    <a href="index.html" class="home-btn">← Home</a>
 
     <div class="game-wrapper">
         <div class="score-board">Score: <span id="current-score">0</span></div>
@@ -448,7 +482,6 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        // NEW IMPORTS: 'where' for searching names, 'updateDoc' for updating existing scores
         import { getFirestore, collection, addDoc, query, orderBy, limit, getDocs, where, updateDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
         // --- YOUR FIREBASE CONFIG ---
@@ -581,7 +614,7 @@
                 const res = await fetch('https://restcountries.com/v3.1/all?fields=name,cca2,population,independent');
                 if (!res.ok) throw new Error("API Failed");
                 const data = await res.json();
-                countriesData = data.filter(c => c.independent && c.population > 0).map(c => ({
+                countriesData = data.filter(c => (c.independent || c.cca2 === 'XK' || c.cca2 === 'PS') && c.population > 0).map(c => ({
                     name: c.name.common, code: c.cca2.toLowerCase(), pop: c.population
                 }));
             } catch (err) {
