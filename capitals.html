@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Capital City: Sudden Death</title>
+    <style>
+        :root {
+            --bg-color: #1a1a1a;
+            --card-bg: #2d3436;
+            --text-color: #ffffff;
+            --accent-green: #00b894;
+            --accent-red: #d63031;
+            --accent-gold: #fdcb6e;
+            --input-bg: #111;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { background-color: var(--bg-color); color: var(--text-color); height: 100vh; height: 100dvh; overflow: hidden; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+
+        .game-wrapper { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; padding: 20px; perspective: 1000px; }
+        
+        /* CARD STYLES */
+        .quiz-card {
+            background-color: var(--card-bg);
+            width: 100%;
+            max-width: 500px;
+            border-radius: 20px;
+            padding: 40px 20px;
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            position: relative;
+            will-change: transform, opacity; 
+        }
+
+        .flag { width: 200px; height: auto; border-radius: 10px; box-shadow: 0 8px 16px rgba(0,0,0,0.3); margin-bottom: 20px; object-fit: cover; }
+        h1 { font-size: 2.5rem; margin-bottom: 5px; text-shadow: 0 2px 4px rgba(0,0,0,0.5); }
+        .label { font-size: 1rem; opacity: 0.7; margin-bottom: 25px; text-transform: uppercase; letter-spacing: 2px;}
+
+        /* INPUT STYLES */
+        .input-group { width: 100%; max-width: 350px; position: relative; }
+        .capital-input {
+            width: 100%; padding: 15px; font-size: 1.2rem; background: var(--input-bg);
+            border: 2px solid #555; border-radius: 10px; color: white; text-align: center; outline: none; transition: border-color 0.2s, box-shadow 0.2s;
+        }
+        .capital-input:focus { border-color: var(--accent-green); }
+        .capital-input.success { border-color: var(--accent-green); box-shadow: 0 0 15px var(--accent-green); background-color: rgba(0, 184, 148, 0.1); }
+
+        .btn-submit {
+            margin-top: 15px; padding: 12px 40px; font-size: 1.1rem; font-weight: bold; border: none; border-radius: 50px;
+            cursor: pointer; background: var(--accent-green); color: white; transition: transform 0.1s; width: 100%; max-width: 350px;
+        }
+        .btn-submit:active { transform: scale(0.98); }
+
+        .score-display { position: absolute; top: 20px; right: 20px; font-size: 1.5rem; font-weight: bold; color: var(--accent-gold); background: rgba(0,0,0,0.3); padding: 5px 15px; border-radius: 20px; }
+
+        /* ANIMATIONS */
+        .shake { animation: shake 0.4s ease-in-out; }
+        @keyframes shake { 0% { transform: translateX(0); } 25% { transform: translateX(-10px); } 50% { transform: translateX(10px); } 75% { transform: translateX(-10px); } 100% { transform: translateX(0); } }
+        .anim-swipe-out { animation: swipeOut 0.4s cubic-bezier(0.4, 0.0, 0.2, 1) forwards; }
+        @keyframes swipeOut { 0% { transform: translateX(0) scale(1); opacity: 1; } 100% { transform: translateX(-100px) scale(0.9); opacity: 0; } }
+        .anim-swipe-in { animation: swipeIn 0.4s cubic-bezier(0.0, 0.0, 0.2, 1) forwards; }
+        @keyframes swipeIn { 0% { transform: translateX(100px) scale(0.9); opacity: 0; } 100% { transform: translateX(0) scale(1); opacity: 1; } }
+
+        /* LOADING & MODAL */
+        .loading-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--bg-color); display: flex; align-items: center; justify-content: center; z-index: 200; flex-direction: column; }
+        .spinner { width: 40px; height: 40px; border: 4px solid #fff; border-top: 4px solid var(--accent-green); border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 20px; }
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); display: flex; align-items: center; justify-content: center; z-index: 100; opacity: 0; pointer-events: none; transition: opacity 0.3s; }
+        .modal-overlay.active { opacity: 1; pointer-events: all; }
+        .modal-content { background: #2d3436; padding: 30px; border-radius: 20px; text-align: center; border: 1px solid #555; box-shadow: 0 10px 40px rgba(0,0,0,0.5); width: 90%; max-width: 400px; max-height: 90vh; overflow-y: auto; }
+
+        .correct-answer-text { color: var(--accent-green); font-size: 1.4rem; font-weight: bold; margin: 10px 0 20px 0; }
+        
+        /* LEADERBOARD STYLES */
+        .submit-section { margin: 20px 0; display: flex; gap: 10px; justify-content: center; }
+        .name-input { background: #222; border: 1px solid #555; color: white; padding: 10px; border-radius: 8px; font-size: 1.2rem; width: 150px; text-align: center; text-transform: uppercase; }
+        .leaderboard-container { margin-top: 20px; background: rgba(0,0,0,0.3); border-radius: 10px; padding: 10px; text-align: left; }
+        .leaderboard-title { color: var(--accent-gold); text-align: center; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 1px; }
+        .score-row { display: flex; justify-content: space-between; padding: 8px; border-bottom: 1px solid #444; font-size: 1rem; }
+        .score-row:nth-child(even) { background: rgba(255,255,255,0.05); }
+        .rank-num { color: #888; margin-right: 10px; width: 20px; }
+        .player-name { font-weight: bold; }
+        .player-score { color: var(--accent-gold); }
+
+        @media (max-width: 600px) { .quiz-card { padding: 30px 15px; } .flag { width: 150px; } h1 { font-size: 2rem; } }
+    </style>
+</head>
+<body>
+
+    <div class="loading-overlay" id="loading">
+        <div class="spinner"></div>
+        <p>Fetching Global Data...</p>
+    </div>
+
+    <div class="score-display">Score: <span id="current-score">0</span></div>
+
+    <div class="game-wrapper">
+        <div class="quiz-card" id="quiz-card">
+            <img src="" alt="Flag" class="flag" id="flag-img">
+            <h1 id="country-name">Loading...</h1>
+            <p class="label">What is the capital?</p>
+            
+            <div class="input-group">
+                <input type="text" id="capital-input" class="capital-input" placeholder="Type here..." autocomplete="off">
+            </div>
+            
+            <button class="btn-submit" onclick="checkAnswer()">SUBMIT</button>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="game-over-modal">
+        <div class="modal-content">
+            <h1 style="color: #d63031">Game Over!</h1>
+            <p style="font-size: 1.2rem; margin-top: 5px;">Correct Answer:</p>
+            <p class="correct-answer-text" id="correct-answer-display">Paris</p>
+            <p style="font-size: 1.5rem; margin-bottom: 10px;">Final Score: <span id="final-score" style="font-weight:bold; color:white">0</span></p>
+            
+            <div class="submit-section" id="submit-section">
+                <input type="text" id="nickname-input" class="name-input" placeholder="NAME" maxlength="10">
+                <button class="btn-submit" style="width: auto;" onclick="submitScore()">SAVE</button>
+            </div>
+            <p id="saved-msg" style="color: var(--accent-green); display:none; font-weight:bold;">Score Saved!</p>
+
+            <div class="leaderboard-container">
+                <div class="leaderboard-title">Top Capitals Experts</div>
+                <div id="leaderboard-list">
+                    <div style="text-align:center; color:#888;">Loading...</div>
+                </div>
+            </div>
+
+            <button class="btn-submit" style="margin-top: 20px;" onclick="initGame()">Try Again</button>
+        </div>
+    </div>
+
+    <script type="module">
+        // IMPORT FIREBASE
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getFirestore, collection, addDoc, query, orderBy, limit, getDocs, where, updateDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+        // --- YOUR FIREBASE KEYS ---
+        const firebaseConfig = {
+            apiKey: "AIzaSyBLaW3lSKDO7gMwi5_QbsLzfWPZpx2Zoto",
+            authDomain: "country-population-game.firebaseapp.com",
+            projectId: "country-population-game",
+            storageBucket: "country-population-game.firebasestorage.app",
+            messagingSenderId: "539696981786",
+            appId: "1:539696981786:web:cb76a40d7ddca5f24e2ea3",
+            measurementId: "G-FF3R2PNX2W"
+        };
+        // ---------------------------------------
+
+        // Initialize Firebase
+        let db;
+        try {
+            const app = initializeApp(firebaseConfig);
+            db = getFirestore(app);
+            console.log("Firebase initialized");
+        } catch (e) {
+            console.warn("Firebase failed to load.", e);
+        }
+
+        // Global Variables
+        let countriesData = [];
+        let currentCountry;
+        let score = 0;
+        let seenCountries = new Set();
+        let isTransitioning = false;
+
+        // DOM Elements
+        const loadingOverlay = document.getElementById('loading');
+        const flagImg = document.getElementById('flag-img');
+        const countryName = document.getElementById('country-name');
+        const capitalInput = document.getElementById('capital-input');
+        const scoreEl = document.getElementById('current-score');
+        const quizCard = document.getElementById('quiz-card');
+        
+        const modal = document.getElementById('game-over-modal');
+        const finalScoreEl = document.getElementById('final-score');
+        const correctAnswerDisplay = document.getElementById('correct-answer-display');
+        
+        const submitSection = document.getElementById('submit-section');
+        const nicknameInput = document.getElementById('nickname-input');
+        const leaderboardList = document.getElementById('leaderboard-list');
+        const savedMsg = document.getElementById('saved-msg');
+
+        // Backup Data
+        const BACKUP_COUNTRIES = [
+            { name: "France", capital: ["Paris"], code: "fr" },
+            { name: "Japan", capital: ["Tokyo"], code: "jp" },
+            { name: "United States", capital: ["Washington, D.C."], code: "us" },
+            { name: "United Kingdom", capital: ["London"], code: "gb" },
+            { name: "Germany", capital: ["Berlin"], code: "de" },
+            { name: "Italy", capital: ["Rome"], code: "it" }
+        ];
+
+        // 1. Fetch Data
+        async function fetchCountries() {
+            try {
+                const res = await fetch('https://restcountries.com/v3.1/all?fields=name,cca2,capital,independent');
+                const data = await res.json();
+                countriesData = data.filter(c => 
+                    (c.independent || c.cca2 === 'XK' || c.cca2 === 'PS') && 
+                    c.capital && c.capital.length > 0
+                ).map(c => ({
+                    name: c.name.common, code: c.cca2.toLowerCase(), capital: c.capital 
+                }));
+            } catch (err) {
+                console.warn("API Failed, using backup");
+                countriesData = BACKUP_COUNTRIES;
+            }
+            loadingOverlay.style.display = 'none';
+            initGame();
+        }
+
+        // 2. Normalization Helper
+        function normalizeString(str) {
+            return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim().replace(/[^a-z0-9]/g, "");
+        }
+
+        // 3. Game Logic
+        function initGame() {
+            score = 0;
+            scoreEl.innerText = score;
+            seenCountries.clear();
+            
+            // UI Reset
+            modal.classList.remove('active');
+            capitalInput.value = "";
+            quizCard.classList.remove('anim-swipe-out', 'anim-swipe-in');
+            
+            // Leaderboard Reset
+            submitSection.style.display = 'flex';
+            savedMsg.style.display = 'none';
+            // Auto-fill nickname
+            const savedName = localStorage.getItem('popGameNickname');
+            if(savedName) nicknameInput.value = savedName;
+
+            nextRound();
+        }
+
+        function nextRound() {
+            let candidate;
+            let attempts = 0;
+            do {
+                candidate = countriesData[Math.floor(Math.random() * countriesData.length)];
+                attempts++;
+            } while (seenCountries.has(candidate.code) && attempts < 100);
+            if (attempts >= 100) seenCountries.clear();
+
+            currentCountry = candidate;
+            seenCountries.add(candidate.code);
+
+            flagImg.src = `https://flagcdn.com/w320/${currentCountry.code}.png`;
+            countryName.innerText = currentCountry.name;
+            capitalInput.value = "";
+            
+            setTimeout(() => { capitalInput.focus(); isTransitioning = false; }, 50);
+        }
+
+        function checkAnswer() {
+            if (isTransitioning) return;
+            
+            const userGuess = normalizeString(capitalInput.value);
+            const isCorrect = currentCountry.capital.some(cap => normalizeString(cap) === userGuess);
+
+            if (isCorrect) {
+                // WIN
+                isTransitioning = true;
+                score++;
+                scoreEl.innerText = score;
+                capitalInput.classList.add('success');
+                quizCard.classList.add('anim-swipe-out');
+
+                setTimeout(() => {
+                    capitalInput.classList.remove('success');
+                    quizCard.classList.remove('anim-swipe-out');
+                    nextRound(); 
+                    quizCard.classList.add('anim-swipe-in');
+                    setTimeout(() => { quizCard.classList.remove('anim-swipe-in'); }, 400);
+                }, 300);
+
+            } else {
+                // LOSE
+                handleLoss();
+            }
+        }
+
+        function handleLoss() {
+            quizCard.classList.add('shake');
+            capitalInput.style.borderColor = "var(--accent-red)";
+            
+            setTimeout(() => {
+                quizCard.classList.remove('shake');
+                capitalInput.style.borderColor = "#555";
+                correctAnswerDisplay.innerText = currentCountry.capital[0];
+                finalScoreEl.innerText = score;
+                
+                modal.classList.add('active');
+                if(db) fetchLeaderboard(); // Load scores
+            }, 500);
+        }
+
+        // --- LEADERBOARD LOGIC (Targeting "capitals_leaderboard") ---
+        
+        window.submitScore = async function() {
+            if (!db) return alert("Offline mode");
+            const name = nicknameInput.value.toUpperCase().trim();
+            if(!name) return alert("Enter a name!");
+            
+            localStorage.setItem('popGameNickname', name);
+            submitSection.style.display = 'none';
+            savedMsg.innerText = "Saving...";
+            savedMsg.style.display = 'block';
+
+            try {
+                // NOTICE: We are using "capitals_leaderboard" collection here!
+                const q = query(collection(db, "capitals_leaderboard"), where("name", "==", name));
+                const querySnapshot = await getDocs(q);
+
+                if (!querySnapshot.empty) {
+                    const docRef = querySnapshot.docs[0].ref;
+                    const oldScore = querySnapshot.docs[0].data().score;
+                    if (score > oldScore) {
+                        await updateDoc(docRef, { score: score, date: new Date() });
+                        savedMsg.innerText = "New Record Saved!";
+                        savedMsg.style.color = "var(--accent-green)";
+                    } else {
+                        savedMsg.innerText = `High Score remains ${oldScore}`;
+                        savedMsg.style.color = "var(--accent-gold)";
+                    }
+                } else {
+                    await addDoc(collection(db, "capitals_leaderboard"), { name: name, score: score, date: new Date() });
+                    savedMsg.innerText = "Score Saved!";
+                    savedMsg.style.color = "var(--accent-green)";
+                }
+                fetchLeaderboard();
+            } catch (e) {
+                console.error(e);
+                alert("Error saving score.");
+                submitSection.style.display = 'flex';
+            }
+        };
+
+        async function fetchLeaderboard() {
+            if (!db) { leaderboardList.innerHTML = "Offline"; return; }
+            leaderboardList.innerHTML = '<div style="text-align:center; color:#888;">Loading...</div>';
+            try {
+                // NOTICE: "capitals_leaderboard" here too
+                const q = query(collection(db, "capitals_leaderboard"), orderBy("score", "desc"), limit(10));
+                const querySnapshot = await getDocs(q);
+                let html = "";
+                let rank = 1;
+                querySnapshot.forEach((doc) => {
+                    const data = doc.data();
+                    html += `<div class="score-row"><div><span class="rank-num">#${rank}</span> <span class="player-name">${data.name}</span></div><span class="player-score">${data.score}</span></div>`;
+                    rank++;
+                });
+                leaderboardList.innerHTML = html || "No scores yet!";
+            } catch (e) {
+                console.error(e);
+                leaderboardList.innerHTML = "Error loading scores.";
+            }
+        }
+
+        // Global exposure
+        window.checkAnswer = checkAnswer;
+        window.initGame = initGame;
+        window.submitScore = submitScore;
+
+        // Enter Key
+        capitalInput.addEventListener("keypress", function(event) {
+            if (event.key === "Enter") checkAnswer();
+        });
+
+        fetchCountries();
+    </script>
+</body>
+</html>
